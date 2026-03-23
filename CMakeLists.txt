@@ -22,10 +22,14 @@ set(CAPSTONE_BUILD_CSTOOL OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(capstone)
 
+# 如果使用的是 MinGW 编译器，开启静态链接，把运行库打包进 exe
+if(MINGW)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+endif()
+
 add_executable(ObfuScan
         main.cpp
         miniz.c
-        disasm_arm64.cpp
         disasm_arm64.cpp
         disasm_arm64.h
 )

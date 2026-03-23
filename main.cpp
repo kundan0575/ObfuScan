@@ -1527,7 +1527,6 @@ int main(int argc, char *argv[]) {
      //     apk_path = "D:\\QQ.apk";
      //    apk_path ="D:\\dyjs.apk";
     //      apk_path ="D:\\tb.apk";
-        apk_path ="D:\\xhs.apk";
 
 
     }
