@@ -1,5 +1,9 @@
 # ObfuScan
 
+[English](#english) | [中文](#中文)
+
+## 中文
+
 一个面向 **Android APK Native SO 预筛选** 的小工具。  
 核心目标不是“完整还原逻辑”，而是作为**逆向分析 / 安全审计前的前置探针**，帮助你在一堆 `arm64-v8a` 的 `.so` 里，**更快发现高价值目标**。
 
@@ -283,6 +287,299 @@ ObfuScan **不适合**拿来做这些事情：
 ## 致谢
 
 感谢以下项目 / 工具：
+
+- **GPT**
+- **Capstone**
+- **miniz**
+
+---
+
+## English
+
+### ObfuScan
+
+A lightweight tool for **Android APK Native SO pre-screening**.  
+The core goal is not to "completely restore logic", but to serve as a **pre-probe before reverse analysis / security audit**, helping you **quickly find high-value targets** among a bunch of `arm64-v8a` `.so` files.
+
+It is suitable for scenarios like:
+
+- Quickly scanning an APK before opening IDA / Ghidra / Hopper
+- Prioritizing Native libraries that are more worth investing time in
+- Early identification of suspected:
+    - Packing / loader-type protection
+    - Strong obfuscation / OLLVM-like features
+    - ZIP container disguised as SO
+    - Suspicious entries (`ELF entry` / `.init_array` / `JNI_OnLoad` / `Java_*`)
+
+---
+
+### Project Positioning
+
+**ObfuScan is not a "fully automatic protection logic restoration" tool.**  
+It is more like an **outpost before audit**:
+
+- Helps you quickly scan all 64-bit SOs in an APK
+- Provides concise Chinese risk summaries
+- Sorts by **high / medium / low** risk levels
+- Further displays key entry previews for high-risk samples
+- Helps you decide faster:
+    - Which SOs are worth looking at first
+    - Which entries are worth setting breakpoints / disassembling / dynamic tracking first
+
+In a nutshell:
+
+> **Screen first, then dig deeper.**  
+> Prioritize your limited reverse engineering time on targets that are more likely to be valuable.
+
+---
+
+### Quick Start
+
+#### Method 1: Web Interface (Recommended)
+
+1. **Start the Web Server**
+   ```bash
+   cd ObfuScan
+   python web_server.py
+   ```
+
+2. **Access the Web Interface**
+   Open your browser and visit `http://127.0.0.1:8080`
+
+3. **Upload APK and Analyze**
+   - Click the "Select APK File" button to choose the APK file to analyze
+   - Click the "Start Analysis" button
+   - Wait for the analysis to complete and view the results
+
+#### Method 2: Command Line
+
+1. **Run ObfuScan**
+   ```bash
+   ObfuScan.exe <apk_path>
+   ```
+
+2. **View Output**
+   The command line will output analysis results in JSON format
+
+---
+
+### Currently Supported Capabilities
+
+#### 1. APK `arm64-v8a` SO Scanning
+Automatically enumerates in APK:
+
+- `lib/arm64-v8a/*.so`
+
+#### 2. ELF Basic Analysis
+Supports extraction and statistics of:
+
+- ELF file header verification
+- Program Header / Section Header
+- `.text / .rodata / .data / .init_array`
+- `.dynsym / .dynstr`
+- Import symbols / Export symbols
+- Executable segment entropy
+- Large high-entropy data
+- Whether the symbol table is stripped
+
+#### 3. AArch64 Instruction Statistics (based on Capstone)
+Performs linear disassembly on `.text` or executable segments,统计：
+
+- Branch density
+- Indirect jump density
+- Arithmetic / logical / comparison instruction density
+
+Used to assist in judging:
+
+- Suspected OLLVM
+- Suspected strong control flow obfuscation
+- Suspected custom protection logic
+
+#### 4. ZIP Container Disguised as SO Identification
+Some `.so` entries in APKs are not actually bare ELF files, but ZIP containers or secondary packaged resources.
+
+ObfuScan supports:
+
+- Identifying ZIP disguised SO
+- Automatically attempting to extract inner ELF
+- Continuing analysis on inner ELF
+
+#### 5. High-Risk Sample Entry Preview
+For high-risk SOs, it will further attempt to preview:
+
+- `ELF entry`
+- `.init_array`
+- `JNI_OnLoad`
+- `Java_*`
+- Exported functions containing `init / load / register` in their names
+
+The output format is kept as concise as possible for quick manual judgment.
+
+#### 6. Chinese Summary Output
+The default output is **concise Chinese results**, focusing on displaying:
+
+- SO file name
+- Detection result
+- Risk level
+- Description
+- Suspicious points
+- Key entry previews (for high-risk samples)
+- Recommendations
+
+Suitable for focusing on key points in a large number of samples, rather than being overwhelmed by technical details at the beginning.
+
+---
+
+### What Scenarios It's Suitable For
+
+This tool is more suitable for tasks like:
+
+- Screening out a batch of SOs worth looking at before reverse analysis
+- Finding targets that "may hide logic / protection / entries" before security audit
+- Quickly identifying higher-value samples from hundreds of Native libraries
+- Conducting a first-round quick check on the Native layer of APKs
+
+### What Scenarios It's Not Suitable For
+
+ObfuScan **is not suitable** for these things:
+
+- Precisely restoring complete CFG
+- Precisely recovering function boundaries
+- Automatically restoring VMP logic
+- Automatically restoring shell / VM / handler details
+- Replacing IDA / Ghidra / dynamic debuggers
+
+It is more like:
+
+> **"A filter before真正开始逆向"**  
+> Rather than "the end of reverse engineering work."
+
+---
+
+### How to Interpret Output Results
+
+You can generally understand it with this思路：
+
+#### High Risk
+Priority viewing.  
+Such targets are more likely to have:
+
+- Packing / loader
+- Strong obfuscation
+- Suspicious initialization logic
+- Abnormal entries
+- Protection layers worth in-depth tracking
+
+#### Medium Risk
+Has a certain degree of suspicion, but may not really have strong protection.  
+Suitable for deciding whether to深入 based on specific business context.
+
+#### Low Risk
+Usually more like ordinary release versions, basic libraries, or lightly obfuscated samples.  
+Generally not prioritized.
+
+---
+
+### About Accuracy
+
+#### High-Risk Detection
+Currently, **the screening value of high-risk samples is relatively higher**.  
+Its positioning is not "100% accurate classification", but:
+
+> **Try to put people who are more worth reversing at the front.**
+
+In this sense, high-risk results are usually more valuable for reference.
+
+#### VMP Detection
+**VMP detection is currently only a heuristic reference and not guaranteed to be accurate.**
+
+The reasons are simple:
+
+- Various self-developed VMs differ greatly
+- Some strong obfuscation, shells, and linker logic also exhibit similar characteristics
+- Static linear disassembly itself has limitations
+- No complete dispatcher / handler / bytecode data flow recovery
+
+So in the current version:
+
+- **"Suspected VMP" = worth focusing on**
+- **Does not mean confirmed VMP**
+- **"No obvious VMP characteristics" does not mean absolutely no VMP**
+
+It is recommended to understand it as:
+
+> **An auxiliary signal to help you prioritize**  
+> Rather than a final conclusion.
+
+---
+
+### A Typical Usage Approach
+
+In actual work, I recommend using it like this:
+
+1. First scan the APK with ObfuScan (Web interface or command line)
+2. Focus on high-risk samples
+3. Then look at the entry previews of these high-risk samples
+4. Select the few SOs most worth in-depth analysis
+5. Then enter:
+    - IDA / Ghidra
+    - Frida / self-developed JNI monitoring
+    - Dynamic tracking / breakpoint debugging
+    - CFG / dispatcher / handler in-depth analysis
+
+This usually saves time compared to blindly opening dozens or hundreds of SOs at the beginning.
+
+---
+
+### Current Known Limitations
+
+- Mainly oriented to **Android 64-bit AArch64 SO**
+- Not a complete decompiler
+- OLLVM / strong obfuscation judgment is heuristic
+- VMP detection currently has limited accuracy
+- May miss or false alarm on some unconventional shells / self-developed VMs / deeply disguised samples
+- Currently more biased towards "pre-screening" rather than "final定性"
+
+---
+
+### Possible Future Directions
+
+Possible future improvements include:
+- AI integration
+- More stable entry function in-depth analysis
+- More detailed dispatcher / handler identification
+- Basic block splitting
+- Stronger OLLVM / flatten detection
+- More strict VMP structural-level identification
+- More detailed optional verbose output
+- Batch APK directory scanning
+
+---
+
+### Who It's For
+
+This tool is more suitable for:
+
+- People doing Android Native reverse engineering
+- People doing APK security audits
+- Researchers who need to batch pre-screen SOs
+- People who want to quickly find high-value targets before investing in in-depth analysis
+
+---
+
+### Final Note
+
+The core idea of this project is simple:
+
+> **Before you really start reversing, help you find targets that are more worth reversing.**
+
+If it can help you focus the time you would have spent on 100 ordinary SOs on the few truly worth-looking targets in advance, then it has completed its task.
+
+---
+
+### Acknowledgments
+
+Thanks to the following projects / tools:
 
 - **GPT**
 - **Capstone**
